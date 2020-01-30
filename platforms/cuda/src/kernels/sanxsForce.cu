@@ -13,7 +13,8 @@ __device__ double atomicAdd(double* address, double val)
 }
 #endif
 
-// Run in single block
+// Run in a single block
+// Calculate bilayer COM
 extern "C" __global__ void computeOrigin( 
 const real4* __restrict__ posq,
 double* origin,
@@ -31,7 +32,7 @@ const double* __restrict__ mass_for_origin
     }
     __syncthreads();
 
-    // Do paralel reduction for origin_buffer
+    // Do parallel reduction for origin_buffer
     for (unsigned int stride=blockDim.x/2; stride>0; stride>>=1) {
         if (threadIndex < stride) {
             origin_buffer[threadIndex] += origin_buffer[threadIndex + stride];
@@ -45,7 +46,7 @@ const double* __restrict__ mass_for_origin
     }
 }
 
-// Run in single block
+// Run in a single block
 extern "C" __global__ void computePreFFtotal(
 double* A_real_xray_current, 
 double* A_real_neutron_current, 
@@ -66,7 +67,7 @@ double* A_complex_neutron_current
     }
 }
 
-
+// Calculate form factor components for the current system
 extern "C" __global__ void computeFFtotal( 
 const real4* __restrict__ posq,
 double* origin,
@@ -102,13 +103,11 @@ double* A_complex_neutron_current
 
 	if (fabsf(z)<=cutoff[0]){
     	    // X-ray
-	    // We don't need to keep track of water/non-water atoms as we precalculated all the scattering strengths for the atoms in advance
-    	    for (int i=0; i<Nq_xray; ++i){
+	    for (int i=0; i<Nq_xray; ++i){
 		atomicAdd(&A_real_xray_current[i*blockDim.x + threadIndex], xray_strength[index*Nq_xray + i] * cosf(xray_qs[i]*z));
 		atomicAdd(&A_complex_xray_current[i*blockDim.x + threadIndex], xray_strength[index*Nq_xray + i] * sinf(xray_qs[i]*z));
     	    }
     	    // Neutron
-    	    // A_real_current, A_complex_current for the neutron q-s starts with A_real/complex_current[Nq_xray*blockDim.x]
     	    for (int i=0; i<Nq_neutron; ++i){
 		atomicAdd(&A_real_neutron_current[i*blockDim.x + threadIndex], neutron_strength[index*Nq_neutron + i] * cosf(neutron_qs[i]*z));
     	    	atomicAdd(&A_complex_neutron_current[i*blockDim.x + threadIndex], neutron_strength[index*Nq_neutron + i] * sinf(neutron_qs[i]*z));
@@ -117,7 +116,7 @@ double* A_complex_neutron_current
     }
 }
 
-// Run in single block
+// Run in a single block
 extern "C" __global__ void computePostFFtotal( 
 double* A_real_xray_current, 
 double* A_real_neutron_current, 
@@ -136,7 +135,6 @@ double* A_sqr_neutron_out
 
     // Reduce X-ray
     for (int i=0; i<Nq_xray; ++i){
-        // Reduce
         for (unsigned int stride=blockDim.x/2; stride>0; stride>>=1) {
             if (threadIndex < stride) {
                 A_real_xray_current[threadIndex + i*blockDim.x] += A_real_xray_current[threadIndex + i*blockDim.x + stride];
@@ -167,6 +165,8 @@ double* A_sqr_neutron_out
     }
     __syncthreads();
     
+    // We have the reduced values in A_real_neutron_current[i*blockDim.x] for each i-th q value
+    // Now put them into the first Nq_neutrin elements of A_real_neutron_current for a future use
     for (int index=threadIndex; index<Nq_neutron; index+=blockDim.x) {
 	A_real_neutron_out[index] = A_real_neutron_current[index*blockDim.x];
 	A_complex_neutron_out[index] = A_complex_neutron_current[index*blockDim.x];
@@ -174,6 +174,7 @@ double* A_sqr_neutron_out
     }
 }
 
+// Here we precalculate B_real/B_sqr
 extern "C" __global__ void computePreForce( 
 const real4* __restrict__ posq,
 const float* __restrict__ box, 
@@ -214,7 +215,7 @@ double* B_sqr_neutron_current
     }
 }
 
-
+// Calculate force
 extern "C" __global__ void computeForce( 
 const real4* __restrict__ posq,
 const float* __restrict__ alpha, 
@@ -246,13 +247,11 @@ const double* __restrict__ delta_F_exp_xray,
 const double* __restrict__ delta_F_exp_neutron,
 unsigned long long* __restrict__ forceBuffer
 ) {
-
     int threadIndex = threadIdx.x;
 
-    const double const_xray = (-2.0) * alpha[0] * k_xray[0]* T[0] * (1.380658e-23 * 6.0221367e23 /1e3) * (1.0/Nq_xray); // k_B (J*K^-1) * N_avagadro (mol^-1) * 10e-3 (J->kJ) = 0.0083144621 (kJ/(mol*K))
-    const double const_neutron = (-2.0) * alpha[0] * k_neutron[0]* T[0] * (1.380658e-23 * 6.0221367e23 /1e3) * (1.0/Nq_neutron); // k_B (J*K^-1) * N_avagadro (mol^-1) * 10e-3 (J->kJ) = 0.0083144621 (kJ/(mol*K))
+    const double const_xray = (-2.0) * alpha[0] * k_xray[0]* T[0] * (1.380658e-23 * 6.0221367e23 /1e3) * (1.0/Nq_xray); // k_Boltzmann (J*K^-1) * N_avagadro (mol^-1) * 10e-3 (J->kJ) = 0.0083144621 (kJ/(mol*K))
+    const double const_neutron = (-2.0) * alpha[0] * k_neutron[0]* T[0] * (1.380658e-23 * 6.0221367e23 /1e3) * (1.0/Nq_neutron); // k_Boltzmann (J*K^-1) * N_avagadro (mol^-1) * 10e-3 (J->kJ) = 0.0083144621 (kJ/(mol*K))
     for (int index=blockIdx.x * blockDim.x + threadIndex; index<particles_size; index+=blockDim.x * gridDim.x) {
-
         // Wrap the coords of the atom
         float z = posq[particles[index]].z - origin[0];
         if (fabsf(z) > box[2]/2.0) {
@@ -274,10 +273,6 @@ unsigned long long* __restrict__ forceBuffer
         	force += const_xray * ((F_total_xray[i] - F_exp_xray[i]) / (delta_F_exp_xray[i]*delta_F_exp_xray[i])) *
                             ((1.0/F_total_xray[i]) * scatt_streng_for_force * xray_qs[i] * 
 			     (-sinf(xray_qs[i]*z)*(A_real_xray_out[i] - B_real_xray_current[i]) + cosf(xray_qs[i]*z)*A_complex_xray_out[i]));
-		//printf("F_total_xray[i] = %f\n", F_total_xray[i]);
-		//printf("force_xray = %f\n", force);
-        	//atomicAdd(&forceBuffer[particles[index]+2*PADDED_NUM_ATOMS], static_cast<unsigned long long>((long long)(force*0x100000000)));
-    	    
 	    }
     	    // Neutron
     	    for (int i=0; i<Nq_neutron; ++i){
@@ -285,8 +280,6 @@ unsigned long long* __restrict__ forceBuffer
 		force += const_neutron * ((F_total_neutron[i] - F_exp_neutron[(i)]) / (delta_F_exp_neutron[i]*delta_F_exp_neutron[i])) *
                             ((1.0/F_total_neutron[i]) * scatt_streng_for_force * neutron_qs[i] * 
 			     (-sinf(neutron_qs[i]*z)*(A_real_neutron_out[i] - B_real_neutron_current[i]) + cosf(neutron_qs[i]*z)*A_complex_neutron_out[i]));
-
-		//atomicAdd(&forceBuffer[particles[index]+2*PADDED_NUM_ATOMS], static_cast<unsigned long long>((long long)(force*0x100000000)));
     	    }
 	
 	    // Add the result
@@ -295,6 +288,7 @@ unsigned long long* __restrict__ forceBuffer
     }
 }
 
+// Calculate energy
 extern "C" __global__ void computeEnergy( 
 const float* __restrict__ alpha, 
 float* energy_buffer,
@@ -309,7 +303,6 @@ const double* __restrict__ delta_F_exp_xray,
 const double* __restrict__ delta_F_exp_neutron,
 real* __restrict__ energyBuffer
 ) {
-
     int threadIndex = threadIdx.x;
     
     // Compute energy
@@ -322,7 +315,7 @@ real* __restrict__ energyBuffer
     }
     __syncthreads();
 
-    for (int index=threadIndex; index<Nq_neutron; index+=blockDim.x) {
+    for (int index=threadIndex; index<Nq_neutron; index+=blockDim.x) {// k_B (J*K^-1) * N_avagadro (mol^-1) * 10e-3 (J->kJ) = 0.0083144621 (kJ/(mol*K))
         energy_buffer[threadIndex] += alpha[0] * k_neutron[0]* T[0] * (1.380658e-23 * 6.0221367e23 /1e3) * (1.0/Nq_neutron) * ((F_total_neutron[index] - F_exp_neutron[index])*(F_total_neutron[index] - F_exp_neutron[index]) / (delta_F_exp_neutron[index]*delta_F_exp_neutron[index]));
     }
     __syncthreads();
@@ -336,12 +329,12 @@ real* __restrict__ energyBuffer
     }
 
     if (threadIndex == 0) {
-	//printf("energy = %f\n", energy_buffer[0]);
-	
         energyBuffer[0] += energy_buffer[0];
     }
 }
 
+// This kernel is used if we set on_gpu flag to true for updateParametersInContext(context, on_gpu)
+// If on_gpu is set to false we do the form factor calculation on the host
 extern "C" __global__ void computeGlobalFtotal( 
 const double* __restrict__ A_real_xray_out,
 const double* __restrict__ A_complex_xray_out,
