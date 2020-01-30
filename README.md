@@ -1,6 +1,6 @@
 Restrained ensemble molecular dynamics method implementation for small angle scattering data. 
 This is a custom force plugin for [OpenMM](http://openmm.org/) simulation package. Currently we provide only CUDA implementation of the plugin, so you’ll need CUDA-enebled device 
-to be able to run the simulation. Besides current installation of OpenMM you’ll need [NumPy](https://numpy.org/) and [mpi4py](https://mpi4py.readthedocs.io), which is a python wrappers for MPI.
+to be able to run the simulation. Besides current installation of OpenMM you’ll need [NumPy](https://numpy.org/) and [mpi4py](https://mpi4py.readthedocs.io).
 
 Building The Plugin
 ===================
