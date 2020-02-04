@@ -85,7 +85,7 @@ saxs_force = REForce()
 # w_dens - average bulk water number density in 1/nm
 # w_dens_sqr - average water number density squared <w_dens^2> in 1/nm^2
 # tau - the parameter used for a gradual introduction of the biasing force in ps. First tau ps the force is 0.0, then it is gradually increased and after 2*tau ps the force is fully introduced.
-# cutoff - the distance (nm) from the bilayer center (origin) within which atoms are subject to the refining force. Should be large enough to include water layer near the lipid headgroups. 
+# cutoff - the distance (nm) from the bilayer center (origin) within which atoms are subject to the refining force. It should be large enough to include water layer near the lipid headgroups. 
 saxs_force.setAllParams(298.0, 2.5e-1, 2.5e-1, 33.6443295866206, 1131.960362492455, 10.0, 6.0)
 if (rank==0):
     saxs_force.setWriteOutFF(True)	# Write output only from the first rank. By default is set to False, which implies no form factor information output.
@@ -94,17 +94,17 @@ n_steps_couple = 100	    		# Recalculate form factor every n_steps_couple steps
 n_iterations_rescale = 1000 		# Rescale the experimental data to the form factor every n_iterations_rescale*n_steps_couple steps
 saxs_force.setCoupleSteps(n_steps_couple)
 
-# Set up atom names. We use them to determine the scattering strenght.
+# Set up atom names. We use them to determine the scattering strength.
 # The full list of atom names and scattering parameters can be found in platforms/cuda/src/CudaFFMaps.cpp. If you use atoms not defined there, feel free to add them.
-# Here we use for_names.dat file that contain only lines with atom numbers, names, etc. Fourth column of this file contain the atom names.
-# We also set all partial charges to 0.0. If you have a good information on a partial charges of the atoms, you can add them here.
+# Here we use for_names.dat file that contains only lines with atom numbers, names, etc. The fourth column of this file contains the atom names.
+# We also set all partial charges to 0.0. If you have a piece of good information on partial charges of the atoms, you can add them here.
 file_names = open("./for_names.dat", "r")
 for line in file_names:
     saxs_force.addName(str(line.split()[3]))
     saxs_force.addCharge(0.0)
 file_names.close()
 
-# Add the atoms that are water. We use this information for a differnt way of water X-ray scattering strength calculation. See paper for the details.
+# Add the atoms that are water. We use this information for a different way of water X-ray scattering strength calculation. See the paper for the details.
 # in_water.dat contains indices of the water atoms one per line.
 file_water = open("./in_water.dat", "r")
 for line in file_water:
@@ -348,10 +348,10 @@ for i in range(inputs.nstep // n_steps_couple):
 
     # Copy averaged (over the system copies) values of the form factor components back to the force object
     saxs_force.setAComponents(A_real_xray, A_complex_xray, A_sqr_xray, A_real_neutron, A_complex_neutron, A_sqr_neutron, B_real_xray, B_sqr_xray, B_real_neutron, B_sqr_neutron)
-    # Calculate current value of the form factor from its averaged components and update the values in the kernel implementation.
-    # We can calculate the form factor from its components on the host CPU and then copy resulting FF values to GPU (default behavior of updateParametersInContext()), or copy the from factor components
+    # Calculate the current value of the form factor from its averaged components and update the values in the kernel implementation.
+    # We can calculate the form factor from its components on the host CPU and then copy resulting FF values to GPU (default behavior of updateParametersInContext()), or copy the form factor components
     # to GPU and then calculate the form factor on GPU (need to add the flag to updateParametersInContext(), e.g. updateParametersInContext(simulation.context, True)).
-    # The benefit of calculating the form factor on GPU or CPU depends on the total number of experimental point.
+    # The benefit of calculating the form factor on GPU or CPU depends on the total number of experimental points.
     # updateParametersInContext(context, on_gpu)
     saxs_force.updateParametersInContext(simulation.context, False)
 
