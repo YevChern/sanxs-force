@@ -113,3 +113,15 @@ You might also consider editing production_param.inp file to set classic MD-spec
 srun python -u run_RE.py -i production_param.inp -t toppar.str -p system_pops.psf -c system_pops.crd > log.out
 ```
 `srun` can be substituted with `mpirun` or `mpiexec` commands if appropriate.
+
+Once your simulation is finished, you can analyze the result. For example, you can have a look at the change in chi^2 and form factor. To do that, we first will filter the output files to get rid of the empty lines:
+```bash
+cat 0ff_xray.dat | grep -v '0 0 0 0' > 0ff_xray.dat
+cat 0ff_neutron.dat | grep -v '0 0 0 0' > 0ff_neutron.dat
+cat 0scale_xray.dat | sed -r '/^\s*$/d' > 0scale_xray.dat
+cat 0scale_neutron.dat | sed -r '/^\s*$/d' > 0scale_neutron.dat
+````
+Next, we can use `get_chi.py` script to calculate chi^2. It will write the chi^2 data and some other useful information:
+```bash
+python get_chi.py
+```
