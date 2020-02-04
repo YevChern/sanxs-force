@@ -1,7 +1,8 @@
 import numpy as np
 from math import sqrt
-
-# This script will calculate and output chi^2 and the values of the form factor at the very beginning and the end of simulation, togather with experimental data.
+#######################################################################################################################################################################
+# This script will calculate and output chi^2 and the values of the form factor at the very beginning and the end of the simulation, together with experimental data. #
+#######################################################################################################################################################################
 
 work_dir = "./"         # Working directory
 num_points_skip = 5     # Read only every num_points_skip's point and skip the rest
