@@ -97,7 +97,6 @@ private:
     OpenMM::CudaArray* atom_names;          // Names of all atoms in the system
     OpenMM::CudaArray* N;
     OpenMM::CudaArray* box;
-    OpenMM::CudaArray* tau;
     double h_tau;
     std::vector<float> prev_box;
     OpenMM::CudaArray* T;
