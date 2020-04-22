@@ -497,11 +497,7 @@ void CudaCalcREForceKernel::initialize(const System& system, const REForce& forc
     origin = OpenMM::CudaArray::create<double>(cu, 1, "origin");
 
     box = OpenMM::CudaArray::create<float>(cu, 3, "box");
-    vector<double> h_tau_tmp;
-    h_tau_tmp.reserve(1);
-    h_tau_tmp.push_back(h_tau);
-    tau = OpenMM::CudaArray::create<double>(cu, 1, "tau");
-    tau->upload(h_tau_tmp);
+    h_tau = 0.0;
 
     vector<double> h_T_tmp;
     h_T_tmp.reserve(1);
@@ -592,7 +588,7 @@ double CudaCalcREForceKernel::execute(ContextImpl& context, bool includeForces, 
     // Alpha is the factor that the force is being multiplied with.
     float current_time = context.getTime();
     std::vector<float> h_alpha;
-    if (current_time > 2.0*h_tau) {
+    if (current_time >= 2.0*h_tau) {
         h_alpha.push_back(1.0);
     } else if (current_time < h_tau) {
         h_alpha.push_back(0.0);
