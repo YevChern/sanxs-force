@@ -45,15 +45,9 @@
 
 #include "openmm/reference/SimTKOpenMMRealType.h"
 
-// Pteros
-#include "pteros/pteros.h"
-#include "pteros/analysis/consumer.h"
-#include "pteros/analysis/trajectory_processor.h"
-
 using namespace REPlugin;
 using namespace OpenMM;
 using namespace std;
-
 
 extern "C" OPENMM_EXPORT void registerRECudaKernelFactories();
 
@@ -189,14 +183,18 @@ void testForce() {
     // Create a symmetric system (complex part of FF cancels out -> 0.0)
     
     const int numParticles = 565;
-    const int numQVal = 654;
+    const int numQVal = 678;
     System system;
-    Vec3 a(1.0, 0.0, 0.0), b(0.0, 1.0, 0.0), c(0.0, 0.0, 565.0);
+    Vec3 a(1.0, 0.0, 0.0), b(0.0, 1.0, 0.0), c(0.0, 0.0, (float)numParticles);
     system.setDefaultPeriodicBoxVectors(a, b, c);
     vector<Vec3> positions(numParticles);
     for (int i = 0; i < numParticles; i++) {
         system.addParticle(1.0);
-        positions[i] = Vec3(i, 0.1*i, pow(-1.0, i));
+        if (i==0) {
+            positions[i] = Vec3(i, 0.1*i, 0.0);
+        } else {
+            positions[i] = Vec3(i, 0.1*i, pow(-1.0, i));
+        }
     }
     REForce* force = new REForce();
     system.addForce(force);
@@ -208,20 +206,17 @@ void testForce() {
     }
 
     force->addParticleOrigin(0);
-    double tau = 123456.0;
-    force->setAllParams(1.0, 1.0, 1.0, 0.0, 0.0, tau, 5000.0);
+    force->setCoupleSteps(1);
+    double tau = 0.0;
+    force->setAllParams(1.0, 1.0, 1.0, 0.0, 0.0, tau, 5000.0);  // T, k_xray, k_neutron, w_dens, w_dens_sqr, tau, cutoff
     vector<double> F, delta_F, q;
  
     buildAFFconstantMap();
     buildNeutronMap();
-    
-    /* With log-scale energy/force even a small difference (e.g. 10^-3) between F_exp and F_current will produce large energy
-     * ~0.0 energy in this test is expected for a non-log scale
-     */
+
     // Add expected x-ray values
     for (int i=0; i<numQVal; ++i){
         q.push_back(M_PI*i + M_PI/2.0);
-//        q.push_back(0.000001);
         F.push_back(getXrayStrength("H", q[i]));
         delta_F.push_back(1.0);
     }
@@ -233,7 +228,6 @@ void testForce() {
     delta_F.clear();
     for (int i=0; i<numQVal; ++i){
         q.push_back(M_PI*i + M_PI/2.0);
-//        q.push_back(0.000001);
         F.push_back(getNeutronStrength("H"));
         delta_F.push_back(1.0);
     }
@@ -245,20 +239,18 @@ void testForce() {
     platform.setPropertyDefaultValue("CudaPrecision", "single");
     Context context(system, integ, platform);
     context.setPositions(positions);
-    context.setTime(tau + 0.5*tau);
-    State state = context.getState(State::Energy | State::Forces);
+    context.setTime(2.0*tau);
+    context.getState(State::Energy | State::Forces);
     force->getParametersFromContext(context);
     force->updateParametersInContext(context, false);
-    state = context.getState(State::Energy | State::Forces);
+    State state = context.getState(State::Energy | State::Forces);
 
     // See if the energy is correct.
-    double expectedEnergy = 0.0;
-    ASSERT_EQUAL_TOL(expectedEnergy, state.getPotentialEnergy(), 1e-5);
+    ASSERT_EQUAL_TOL(0.0, state.getPotentialEnergy(), 1e-5);
 
     // See if the force is correct.
-    double expectedForce = 0.0;
     for (int i=0; i<numParticles; ++i){
-        ASSERT_EQUAL_TOL(expectedForce, state.getForces()[i][2], 1e-5);
+        ASSERT_EQUAL_TOL(0.0, state.getForces()[i][2], 1e-5);
     }
 }
 
