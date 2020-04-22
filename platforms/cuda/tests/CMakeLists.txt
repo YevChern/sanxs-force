@@ -13,7 +13,7 @@ FOREACH(TEST_PROG ${TEST_PROGS})
     SET(PTEROS_INCLUDE_PATH "/home/yevhen/programs/pteros/include")
     SET(PTEROS_LIB_PATH "/home/yevhen/programs/pteros/lib")
     IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -msse2 -std=c++11 -fopenmp -lmpfr -lgmp")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -msse2 -std=c++11 -fopenmp")
         SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
     ENDIF()
 
