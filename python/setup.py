@@ -5,12 +5,12 @@ import sys
 import platform
 
 # Change the following variables to your local path to OpenMM and the plugin directory
-openmm_dir = '/home/yevhen/programs/openmm'
-REplugin_header_dir = '/home/yevhen/projects/openmm_plugin_saxs_new/source/openmmapi/include'
-REplugin_library_dir ='/home/yevhen/projects/openmm_plugin_saxs_new/source'
+openmm_dir = '@OPENMM_DIR@'
+REplugin_header_dir = '@REPLUGIN_HEADER_DIR@'
+REplugin_library_dir = '@REPLUGIN_LIBRARY_DIR@'
 
 # setup extra compile and link arguments on Mac
-extra_compile_args = []
+extra_compile_args = ['-std=c++11']
 extra_link_args = []
 
 if platform.system() == 'Darwin':

@@ -12,6 +12,9 @@ SET(OPENMM_DIR "/home/yevhen/programs/openmm" CACHE PATH "Where OpenMM is instal
 INCLUDE_DIRECTORIES("${OPENMM_DIR}/include")
 LINK_DIRECTORIES("${OPENMM_DIR}/lib" "${OPENMM_DIR}/lib/plugins")
 
+# Specify the C++ version we are building for.
+SET (CMAKE_CXX_STANDARD 11)
+
 # set flags for linking on mac
 IF(APPLE)
     SET (CMAKE_INSTALL_NAME_DIR "@rpath")
@@ -95,7 +98,6 @@ ENDIF(RE_BUILD_CUDA_LIB)
 # Build the Python API
 
 FIND_PROGRAM(PYTHON_EXECUTABLE python)
-#SET(PYTHON_EXECUTABLE "/home/yevhen/venv/bin/python")
 FIND_PROGRAM(SWIG_EXECUTABLE swig)
 IF(PYTHON_EXECUTABLE AND SWIG_EXECUTABLE)
     SET(RE_BUILD_PYTHON_WRAPPERS ON CACHE BOOL "Build wrappers for Python")
