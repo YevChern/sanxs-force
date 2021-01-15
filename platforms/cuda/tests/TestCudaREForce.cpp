@@ -182,7 +182,7 @@ void testForce() {
 
     // Create a symmetric system (complex part of FF cancels out -> 0.0)
     
-    const int numParticles = 565;
+    const int numParticles = 23;
     const int numQVal = 678;
     System system;
     Vec3 a(1.0, 0.0, 0.0), b(0.0, 1.0, 0.0), c(0.0, 0.0, (float)numParticles);
@@ -250,7 +250,7 @@ void testForce() {
 
     // See if the force is correct.
     for (int i=0; i<numParticles; ++i){
-        ASSERT_EQUAL_TOL(0.0, state.getForces()[i][2], 1e-5);
+        ASSERT_EQUAL_TOL(0.0, state.getForces()[i][2], 1e-4);
     }
 }
 
