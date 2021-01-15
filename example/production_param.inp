@@ -25,7 +25,7 @@ cons        = HBonds                            # Constraints mehtod
 
 rest        = no                                # Turn on/off restraints
 
-gen_vel     = yes                               # Generate initial velocities
-gen_temp    = 298.0                             # Temperature for generating initial velocities (K)
-gen_seed    = -1                                # Seed for generating initial velocities
+#gen_vel     = no                               # Generate initial velocities
+#gen_temp    = 298.0                             # Temperature for generating initial velocities (K)
+#gen_seed    = -1                                # Seed for generating initial velocities
 
