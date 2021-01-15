@@ -29,9 +29,6 @@ and that RE_BUILD_CUDA_LIB is on.
 8. Use the build system you selected to build and install the plugin.  For example, if you
 selected Unix Makefiles, type `make install`.
 
-9. To run all the test cases build the "test" target, for example by typing `make test`.
-
-
 Python API
 ==========
 
@@ -46,7 +43,7 @@ processing to do that, though, and for a single plugin it's far simpler to just 
 interface file by hand.  You will find it in the "python" directory.
 
 To build and install the Python API, build the "PythonInstall" target, for example by typing
-"make PythonInstall".  (If you are installing into the system Python, you may need to use sudo.)
+`make PythonInstall`.  (If you are installing into the system Python, you may need to use sudo.)
 This runs SWIG to generate the C++ and Python files for the extension module
 (REPluginWrapper.cpp and REplugin.py), then runs a setup.py script to build and
 install the module.  Once you do that, you can use the plugin from your Python scripts:
