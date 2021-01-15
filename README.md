@@ -22,7 +22,7 @@ the OpenMM header files and libraries.
 this will be the same as OPENMM_DIR, so the plugin will be added to your OpenMM installation.
 
 6. If you plan to build the CUDA platform, make sure that CUDA_TOOLKIT_ROOT_DIR is set correctly
-and that EXAMPLE_BUILD_CUDA_LIB is selected.
+and that RE_BUILD_CUDA_LIB is on.
 
 7. Press "Configure" again if necessary, then press "Generate".
 
